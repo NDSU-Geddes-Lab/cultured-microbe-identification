@@ -15,31 +15,31 @@
 	1. Create a new main folder to store your input, intermediate and output files.
 	2. In this main folder,  create two folders input and output. Store your fastq files in the input folder and 
        keep the output folder for the final result files.
-	3. Store the BC_to_well2.csv file in the main folder.
-	4. Copy and store the main_workflow.Rmd and process_dada2_seqtab.py files in the main folder.
+	3. Store the `BC_to_well2.csv file` in the main folder.
+	4. Copy and store the `main_workflow.Rmd` and `process_dada2_seqtab.py` files in the main folder.
 	5. Go to the Rstudio, Click on the drop down menu named as "Project: (None)" and select "New Project". 
        Click on the "Existing Directory". Click on the "Browse".Select the main folder created in the beginning.
-	6. After doing this successfully, there should be input folder, output folder, main_workflow.Rmd and 
-       process_dada2_seqtab.py in the right bottom panel on the Rstudio.
+	6. After doing this successfully, there should be input folder, output folder, `main_workflow.Rmd` and 
+       `process_dada2_seqtab.py` in the right bottom panel on the Rstudio.
 
 
 ### Execution of the scripts:
-	1. main_workflow.Rmd is a R notebook with multiple code chunks.
+	1. `main_workflow.Rmd` is a R notebook with multiple code chunks.
 	2. First code chunk is for loading the required R packages (dada2, tidyverse and reticulate)
 	3. The second code chunk is the dada2 workflow part. It will output a couple of things below the code chunk:
 		1. List of the fastq files
 		2. Quality plots for the fastq files
 	4. The second code chunk will also output intermediate output files:
 		1. A folder named as "filtered" in the input folder containing filtered fastq files
-		2. A file named "input_seqtab.csv"
+		2. A file named *"input_seqtab.csv"*
 	5. The third code chunk loads pyhton3 for the next step.
-	6. The fourth code chunk runs the python script that process each sequence in the "input_seqtab.csv" file.
+	6. The fourth code chunk runs the python script that process each sequence in the *"input_seqtab.csv"* file.
 		1. For this part, user will provide appropriate arguments to the parameters:
 		2. The forward primer sequence (--fprimer), reverse primer sequence (--rprimer), 
-            path to the input_seqtab.cvs (--seqtab-path) , barcode csv file (--barcode-path) and 
+            path to the input_seqtab.cvs (--seqtab-path), barcode csv file (--barcode-path) and 
             processed_data_output.csv (--outpath-path).
 		3. Once the all arguments are in place, run the chunk
-	7. By this time we have an intermediate output in a csv file called processed_data_output.csv which holds following 
+	7. By this time we have an intermediate output in a csv file called `processed_data_output.csv` which holds following 
        information for each sequence:
 		1. Original sequences
 		2. Its identified forward barcode
