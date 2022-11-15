@@ -27,7 +27,8 @@
 - Change directories to the directory where you downloaded the scripts
 - Run `pip3 install virtualenv` (if virtualenv not installed)
 - Next, run `python3 -m venv python_env` (name your python virtual environment, here we named it **python_env**) 
-- Lastly, run `source python_env/bin/activate` to activate the environment
+- Next, run `source python_env/bin/activate` to activate the environment
+- Next, run `pip3 install pandas` in install pandas library that will be used in the python script
 
 
 ##### Preparation for python3 environment on Windows:
@@ -66,14 +67,16 @@ keep the output folder for the final result files.
     2. Once the all arguments are in place, run the chunk
 - By this time we have an intermediate output in a csv file called `processed_data_output.csv` which holds following 
 information for each sequence:
-          1. Original sequences
-          2. Its identified forward barcode
-          3. Its identified reverse barcode
-          4. Identified well name
-          5. Counts of the sequences in every well of every plate (zero count in the well except the identified well is expected)
+  - Original sequences
+  - Its identified forward barcode
+  - Its identified reverse barcode
+  - Identified well name
+  - Counts of the sequences in every well of every plate (zero count in the well except the identified well is expected)
 - Next code chunk collapses the processed data such that we get a table with all the unique clean sequences with their 
 counts in all the wells in all the plates (960 columns named as Plate*_well*).
 - Now we calculate purity percentage of each unique clean sequence. For each unique clean sequences, its counts are 
 sorted from highest to lowest. It divides each count by the total number of counts for that Plate*_well* and multiplies 
 by 100.
  
+
+Once you are done running the workflow, go to terminal and deactivate the python environment by running `deactivate`.
