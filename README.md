@@ -1,5 +1,5 @@
 # cultured-microbe-identification
-### Identify cultured microbes and calculate their purity
+## Identify cultured microbes and calculate their purity
 
 
 ### To download the scripts from GitHub:

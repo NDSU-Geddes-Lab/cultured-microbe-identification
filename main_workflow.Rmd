@@ -7,8 +7,17 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(dada2)
-library(taxonomizr)
 library(reticulate)
+```
+
+
+### Store relevant paths that will be used in the script
+```{r}
+# Path to Silva database
+silva_db_path <- "~/Documents/silva_db/silva_nr99_v138.1_train_set.fa.gz"
+
+# Path to the folder where all the input fastq files are stored
+path <-"input_data/fastq_files_egla"
 ```
 
 
@@ -27,7 +36,6 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 #Now we visualize the quality profile of the reverse reads:
 plotQualityProfile(fnRs[5:6])
 plotQualityProfile(fnRs[10:11])
-
 
 # Place filtered files in filtered/ subdirectory
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
@@ -64,7 +72,6 @@ head(out)
 plotQualityProfile(filtFs[1:2])
 plotQualityProfile(filtRs[1:2])
 
-
 table(file.exists(filtFs))
 table(file.exists(filtRs))
 
@@ -72,13 +79,11 @@ exists <- file.exists(filtFs) & file.exists(filtRs)
 filtFs <- filtFs[exists]
 filtRs <- filtRs[exists]
 
-
 #Learn the Error Rates
 errF <- learnErrors(filtFs, multithread=TRUE)
 errR <- learnErrors(filtRs, multithread=TRUE)
 # Plot error model
 plotErrors(errF, nominalQ=TRUE)
-
 
 #Apply the core sample inference algorithm to the filtered and trimmed sequence data.
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
@@ -112,19 +117,20 @@ write.csv(t(seqtab2), file.path(path, "input_seqtab.csv"))
 ### Python Part
 ```{r setup, include=FALSE}
 python_path <- Sys.which("python3")
-use_python(python_path, required = T)
+# use_python(python_path, required = T)
+use_virtualenv("/Users/komalmarathe/Documents/test_scripts/test_well_plate_project/python_env")
 ```
 
 F_PRIMER = "GTGCCAGCMGCCGCGGTAA"
 R_PRIMER = "GACTACHVGGGTATCTAATCC"
-args.seqtab_path = "./input_data/fastq_files_egla/input_seqtab.csv"
+args.seqtab_path = "./input_seqtab.csv"
 args.barcode_path = "BC_to_well2.csv"
 args.output_path = "processed_data_output.csv"
 
 ```{bash}
 python3 process_dada2_seqtab.py --fprimer GTGCCAGCMGCCGCGGTAA \
 --rprimer GACTACHVGGGTATCTAATCC \
---seqtab-path ./input_data/fastq_files_egla/input_seqtab.csv \
+--seqtab-path ./input_seqtab.csv \
 --barcode-path BC_to_well2.csv \
 --output-path processed_data_output.csv
 ```
@@ -139,71 +145,23 @@ trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Plate
 
 # Collapse (sum) plate-well values for each unique trimmed 
 unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=sum)
+
+rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
+unique_trimmed_seqs$trimmed_seq <- NULL
+
 # write.csv(unique_trimmed_seqs, file="unique_trimmed_seqs_data.csv")
 ```
 
 
 ### Purity Calculation
 ```{r}
-# Assign trimmed_seq as row names to the collapsed data frame
-rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
-# Remove column X which contains row numbers
-unique_trimmed_seqs$X <- NULL
-# Remove trimmed_seq column
-unique_trimmed_seqs$trimmed_seq <- NULL
-```
-
-
-```{r}
-# Write a function to calculate purity
-calculate_purity_values <- function(one_row_df, main_df){
-  col_names <- colnames(one_row_df)
-  # cat("Column names of small df:", col_names, "\n")
-  for(i in 1:length(col_names)){
-    current_col <- col_names[i]
-    # cat("Current column:", current_col, "\n")
-    # cat("Summing column:", current_col, "Sum of current main df col sum:", sum(main_df[, current_col]), "\n")
-    one_row_df[1, i] <- round((one_row_df[1, i] / sum(main_df[, current_col])) * 100, 2)
-  }
-  return(one_row_df)
-}
-
-
-
-process_each_sequence <- function(uniq_asv_df, top_n){
-  if(top_n > ncol(uniq_asv_df)){
-    print(paste("Warning: Given top_n value is more than the total num of plate-well combinations. Therefore, generating output for maximum possible combinations,", ncol(uniq_asv_df)))
-    top_n <- ncol(uniq_asv_df)
-  }
-  final_df <- as.data.frame(matrix(nrow=0, ncol=top_n+1))
-  colnames(final_df) <- c("ASV", c(paste0("top_count_", 1:top_n)))
-  for(i in 1:nrow(uniq_asv_df)){
-    # print(i)
-    options(warn=-1)
-    sorted_row <- sort(uniq_asv_df[i, ], decreasing = TRUE)
-    one_row_df <- as.data.frame(sorted_row[,1:top_n])
-    seq_purity <- calculate_purity_values(one_row_df, uniq_asv_df)
-    final_row <- c(rownames(one_row_df), paste(colnames(one_row_df), one_row_df[1,], seq_purity[1,], sep = " | "))
-    final_df[nrow(final_df) + 1,] <- final_row
-    # print(one_row_df)
-    # print(seq_purity)
-    options(warn=0)
-  }
-  return(final_df)
-}
-
-
-get_taxonomy <- function(uniq_asv){
-  taxonomy_added <- assignTaxonomy(uniq_asv, "~/Documents/silva_db/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
-  return(taxonomy_added)
-}
-
+source("filter_purity.R")
 ```
 
 
 ```{r}
 final_df <- process_each_sequence(unique_trimmed_seqs, 1100)
-tax <- get_taxonomy(final_df$ASV)
+tax <- get_taxonomy(final_df$ASV, silva_db_path)
 
 fd <- final_df
 rownames(fd) <- fd$ASV

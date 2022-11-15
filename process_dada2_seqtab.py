@@ -5,7 +5,7 @@ import argparse
 
 # F_PRIMER = "GTGCCAGCMGCCGCGGTAA"
 # R_PRIMER = "GACTACHVGGGTATCTAATCC"
-# args.seqtab_path = "./input_data/fastq_files_egla/input_seqtab.csv"
+# args.seqtab_path = "./input_seqtab.csv"
 # args.barcode_path = "BC_to_well2.csv"
 # args.output_path = "processed_data_output.csv"
 
@@ -184,7 +184,8 @@ def get_final_output_csv(all_colnames, seqtab_csv, output_csv_filename, plate_na
         print("Processing sequence " + str(i) + "...")
         extracted_row = extract_data_from_raw_seq(input_seqtab[i], plate_names, brcd_well_dict)
         temporary_df = pd.DataFrame(extracted_row, columns=all_colnames, index=[0])
-        all_seq_df = all_seq_df.append(temporary_df, ignore_index=True)
+        # all_seq_df = all_seq_df.append(temporary_df, ignore_index=True)
+        pd.concat(all_seq_df, temporary_df, ignore_index=True)
     print(all_seq_df.fillna(0))
     all_seq_df = all_seq_df.fillna(0)
     all_seq_df.to_csv(output_csv_filename, sep=',')

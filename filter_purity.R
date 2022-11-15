@@ -37,8 +37,8 @@ process_each_sequence <- function(uniq_asv_df, top_n){
 }
 
 
-get_taxonomy <- function(uniq_asv){
-  taxonomy_added <- assignTaxonomy(uniq_asv, "~/Documents/silva_db/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE)
+get_taxonomy <- function(uniq_asv, silva_db_path){
+  taxonomy_added <- assignTaxonomy(uniq_asv, silva_db_path, multithread=TRUE)
   return(taxonomy_added)
 }
 
