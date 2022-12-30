@@ -3,6 +3,9 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+### IMP NOTE
+
+**Please read README.md file before attempting to run this Rmd notebook.**
 
 ```{r}
 library(tidyverse)
