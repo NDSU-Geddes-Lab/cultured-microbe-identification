@@ -7,7 +7,6 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(dada2)
-# library(reticulate)
 ```
 
 
@@ -17,14 +16,13 @@ library(dada2)
 silva_db_path <- "~/Documents/silva_db/silva_nr99_v138.1_train_set.fa.gz"
 
 # Path to the folder where all the input fastq files are stored
-path <- "input_data/fastq_files_egla"
+path <- "./input"
 ```
 
 
 ### DADA2 Part
 ```{r}
-# Path to all the input fastq files
-path <-"input_data/fastq_files_egla"
+# List all the files present in `path` variable
 list.files(path)
 
 #Sort files to ensure forward/reverse are in the same order
@@ -111,46 +109,43 @@ seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
 table(nchar(getSequences(seqtab2)))
 
 # Write seqtab to a csv file which will be used in python script
-write.csv(t(seqtab2), file.path(path, "input_seqtab.csv"))
+write.csv(t(seqtab2), file.path(path, "./output/input_seqtab.csv"))
 ```
 
 
 ### Python Part
-This code chunk is commented as it does not work as expected for now.
-```{r setup, include=FALSE}
-# python_path <- Sys.which("python3")
-# use_python(python_path, required = T)
-# use_virtualenv("/Users/komalmarathe/Documents/test_scripts/test_well_plate_project/python_env")
-```
 
-F_PRIMER = "GTGCCAGCMGCCGCGGTAA"
-R_PRIMER = "GACTACHVGGGTATCTAATCC"
-args.seqtab_path = "./input_seqtab.csv"
-args.barcode_path = "BC_to_well2.csv"
-args.output_path = "processed_data_output.csv"
+This next code chunk, is to be run on command line. DO NOT run it here in Rstudio, it does not work via Rstudio.
 
-This next code chunk, is to be run on command line. Do not run it here in Rstudio.
-Command explained:
-python3 runs python in the background.
+The purpose of this python part is to run the python script named `process_dada2_seqtab.py`.
+
+This python script identifies well for each sequence based on its barcodes, removes barcodes and primers and keeps the original sequence (ASV), and keeps the counts of sequences as-is.
+
+Please read the following explanation of the python command you will need to run as part of this section.
+
 **process_dada2_seqtab.py** is the python script that processes sequences.
 --fprimer takes forward primer sequence.
 --rprimer takes reverse primer sequence.
 --seqtab-path takes the path of the **input_seqtab.csv** file we get from dada2 workflow above.
 --barcode-path takes the path to the csv file containing barcode information.
 --output-path takes the name of the output file. Keep it as **processed_data_output.csv**
+
+Now that you have read above explanation of what happens with this python section, please copy the following python command, open the "Terminal" tab at the bottom window of your Rstudio, and run this python command there. Remember to run this on "Terminal" tab instead of "Console" tab.
+
 ```{}
 python3 process_dada2_seqtab.py --fprimer GTGCCAGCMGCCGCGGTAA \
 --rprimer GACTACHVGGGTATCTAATCC \
---seqtab-path ./input_seqtab.csv \
+--seqtab-path ./output/input_seqtab.csv \
 --barcode-path BC_to_well2.csv \
---output-path processed_data_output.csv
+--output-path ./output/processed_data_output.csv
 ```
 
+Once you have successfully run this python command, then proceed to executing subsequent/below code chunks directly in Rstudio as done previously.
 
 ### Collapse counts for unique sequencess
 ```{r}
 # Read processed data file
-processed_data <- read.csv("processed_data_output.csv")
+processed_data <- read.csv("./output/processed_data_output.csv")
 # Extract trimmed seqs and their count information
 trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Plate"))
 
@@ -194,7 +189,7 @@ names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
 # Write final data frame into a csv file
 # Uncomment following line if you would like to store the final result in a csv
-# write.csv(fd_with_taxa, file = "asv_analysis_results.csv")
+# write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
 ```
 
 
