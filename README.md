@@ -1,8 +1,26 @@
 # cultured-microbe-identification
+
 ## Identify cultured microbes and calculate their purity
 
+Please use this page as the main entrypoint of this workflow for step-by-step instructions on how to use this.
 
-### To download the scripts from GitHub:
+### Prerequisites
+
+Please download and install the following softwares and packages on your laptop/machine.
+
+	1. R (4.1.0 and above)
+	2. Rstudio
+	3. Python (3.9 and above)
+	4. Python libraries:
+	        1. pandas (1.3.4)
+	5. R packages:
+		1. dada2 (It is always a good idea to make sure that the dada2 package is already installed and running)
+		2. tidyverse
+
+
+### Download the scripts from GitHub
+
+Download this repository containing R and Python scripts to do processing in subsequent steps.
 
 - Go to the cultured-microbiome-identification repository
 - Click on the **Code** 
@@ -10,61 +28,32 @@
 - Move this zipped repository to the repository that holds your input fastq files
 
 
-### Prerequisites:
-
-	1. R (4.1.0 and above)
-	2. Rstudio
-	3. Python (3.9 and above) 
-	4. R packages:
-		1. dada2 (It is always a good idea to make sure that the dada2 package is already installed and running)
-		2. tidyverse
-		3. reticulate
-
-
-##### Preparation for python3 environment on Mac:
-
-- Open terminal on Mac
-- Change directories to the directory where you downloaded the scripts
-- Run `pip3 install virtualenv` (if virtualenv not installed)
-- Next, run `python3 -m venv python_env` (name your python virtual environment, here we named it **python_env**) 
-- Next, run `source python_env/bin/activate` to activate the environment
-- Next, run `pip3 install pandas` in install pandas library that will be used in the python script
-
-
-##### Preparation for python3 environment on Windows:
-
-
-
 ### Organization of the data:
 
-- Create a new main folder to store your input, intermediate and output files. 
-- In this main folder,  create two folders input and output. Store your fastq files in the input folder and 
-keep the output folder for the final result files.
-- Store the `BC_to_well2.csv` file in the main folder.
-- Copy and store the `main_workflow.Rmd` and `process_dada2_seqtab.py` files in the main folder.
+- After downloading and extracting the source code from above step, you should have a directory called `cultured-microbe-identification`
+- In `cultured-microbe-identification` folder, create two sub-folders `input` and `output`.
+- Store your all the fastq files to be processed in the `input` sub-folder and keep the `output` sub-folder for the final result files.
+- Store the `BC_to_well2.csv` file in `cultured-microbe-identification` folder.
 - Go to the Rstudio, Click on the drop down menu named as "Project: (None)" and select "New Project".
-- Click on the "Existing Directory". Click on the "Browse". Select the main folder created in the beginning.
-- After doing this successfully, there should be input folder, output folder, `main_workflow.Rmd` and 
+- Click on the "Existing Directory". Click on the "Browse". Select the `cultured-microbe-identification` folder created in the beginning.
+- After doing this successfully, there should be `input` sub-folder, `output` sub-folder, `BC_to_well2.csv`, `filter_purity.R`, `main_workflow.Rmd` and 
 `process_dada2_seqtab.py` in the right bottom panel on the Rstudio.
 
 
-### Execution of the scripts:
+### Explanation of scripts execution:
+
+This paragraph is only an explanation of what is happening inside R-script and Python script and is meant for understanding an overview.
+
+Once you read this explanation, then proceed to next section of this page on instructions to actual execution.
 
 - `main_workflow.Rmd` is a R notebook with multiple code chunks.
-- First code chunk is for loading the required R packages (dada2, tidyverse and reticulate)
+- First code chunk is for loading the required R packages (dada2, tidyverse)
 - The second code chunk is the dada2 workflow part. It will output a couple of things below the code chunk:
   1. List of the fastq files
   2. Quality plots for the fastq files
-- The second code chunk will also output intermediate output files:
-  1. A folder named as "filtered" in the input folder containing filtered fastq files
-  2. A file named **"input_seqtab.csv"**
-- The third code chunk loads python3 for the next step.
-- The fourth code chunk runs the python script that process each sequence in the **"input_seqtab.csv"** file. 
-  - For this part, user will provide appropriate arguments to the parameters:
-    1. The forward primer sequence (--fprimer), reverse primer sequence (--rprimer), 
-    path to the input_seqtab.cvs (--seqtab-path), barcode csv file (--barcode-path) and 
-    processed_data_output.csv (--outpath-path).
-    2. Once the all arguments are in place, run the chunk
+  3. A folder named as "filtered" in the input folder containing filtered fastq files
+  4. A file named **"input_seqtab.csv"**
+- The next part is to run a python script. It currently cannot be run directly as Rstudio chunk, therefore it has to be run in Terminal as a command. Detailed instructions are present in the R notebook.
 - By this time we have an intermediate output in a csv file called `processed_data_output.csv` which holds following 
 information for each sequence:
   - Original sequences
@@ -79,4 +68,8 @@ sorted from highest to lowest. It divides each count by the total number of coun
 by 100.
  
 
-Once you are done running the workflow, go to terminal and deactivate the python environment by running `deactivate`.
+### Execution
+
+Now that you have all the pre-requisites setup and you understand high-level workflow, please open `main_workflow.Rmd` file in Rstudio.
+
+`main_workflow.Rmd` file contains all step-by-step instructions on how to run each code chunk or section and if you are required to modify any value in any chunk.
