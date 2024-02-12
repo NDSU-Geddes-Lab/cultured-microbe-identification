@@ -18,7 +18,7 @@ library(dada2)
 ### Store relevant paths that will be used in the script
 ```{r}
 # Path to Silva database
-silva_db_path <- "~/Documents/silva_db/silva_nr99_v138.1_train_set.fa.gz"
+silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
 
 # Path to the folder where all the input fastq files are stored
 path <- "./input"
@@ -38,7 +38,7 @@ fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 
 #Now we visualize the quality profile of the reverse reads:
-plotQualityProfile(fnRs[3:6])
+plotQualityProfile(fnFs[3:6])
 plotQualityProfile(fnRs[3:6])
 
 # Place filtered files in filtered/ subdirectory
@@ -65,7 +65,7 @@ out<- filterAndTrim(fnFs,
                     fnRs, 
                     filtRs, 
                     maxN=0, 
-                    truncLen=c(240,200)
+                    truncLen=c(240,200),
                     maxEE=c(2,2), 
                     truncQ=2, 
                     rm.phix=TRUE, 
