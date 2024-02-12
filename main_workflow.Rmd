@@ -153,7 +153,7 @@ Once you have successfully run this python command, then proceed to executing su
 # Read processed data file
 processed_data <- read.csv("./output/processed_data_output.csv")
 # Extract trimmed seqs and their count information
-trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Plate"))
+trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Riley"))
 
 # Collapse (sum) plate-well values for each unique trimmed 
 unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=sum)
@@ -185,7 +185,7 @@ The get_taxonomy function used in the next code chunk  takes two arguments.
 This function uses the assignTaxonomy function from dada2 package in the background.
 
 ```{r}
-final_df <- process_each_sequence(unique_trimmed_seqs, 1100)
+final_df <- process_each_sequence(unique_trimmed_seqs, 5)
 tax <- get_taxonomy(final_df$ASV, silva_db_path)
 
 fd <- final_df
@@ -195,7 +195,7 @@ names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
 # Write final data frame into a csv file
 # Uncomment following line if you would like to store the final result in a csv
-# write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
+write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
 ```
 
 
