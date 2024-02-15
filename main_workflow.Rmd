@@ -161,7 +161,7 @@ unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=su
 rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
 unique_trimmed_seqs$trimmed_seq <- NULL
 
-# write.csv(unique_trimmed_seqs, file="unique_trimmed_seqs_data.csv")
+# write.csv(unique_trimmed_seqs, file="output/unique_trimmed_seqs_data.csv")
 ```
 
 
