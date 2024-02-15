@@ -186,7 +186,7 @@ def get_final_output_csv(all_colnames, seqtab_csv, output_csv_filename, plate_na
         print("Processing sequence " + str(i) + "...")
         extracted_row = extract_data_from_raw_seq(input_seqtab[i], plate_names, brcd_well_dict)
         temporary_df = pd.DataFrame(extracted_row, columns=all_colnames, index=[0])
-        all_seq_df = all_seq_df.append(temporary_df, ignore_index=True)
+        all_seq_df = all_seq_df._append(temporary_df, ignore_index=True)
     print(all_seq_df.fillna(0))
     all_seq_df = all_seq_df.fillna(0)
     all_seq_df.to_csv(output_csv_filename, sep=',')

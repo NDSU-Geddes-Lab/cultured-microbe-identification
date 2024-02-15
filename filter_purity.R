@@ -23,15 +23,14 @@ process_each_sequence <- function(uniq_asv_df, top_n){
   colnames(final_df) <- c("ASV", c(paste0("top_count_", 1:top_n)))
   for(i in 1:nrow(uniq_asv_df)){
     # print(i)
-    options(warn=-1)
-    sorted_row <- sort(uniq_asv_df[i, ], decreasing = TRUE)
-    one_row_df <- as.data.frame(sorted_row[,1:top_n])
+    unsorted_row <- uniq_asv_df[i,]
+    sorted_row <- unsorted_row[, order(t(unsorted_row), decreasing = TRUE)]
+    one_row_df <- sorted_row[,1:top_n]
     seq_purity <- calculate_purity_values(one_row_df, uniq_asv_df)
     final_row <- c(rownames(one_row_df), paste(colnames(one_row_df), one_row_df[1,], seq_purity[1,], sep = " | "))
     final_df[nrow(final_df) + 1,] <- final_row
     # print(one_row_df)
     # print(seq_purity)
-    options(warn=0)
   }
   return(final_df)
 }
