@@ -133,7 +133,7 @@ processed_data[,c("f_barcode","r_barcode","well","trimmed_seq")] <- ""
 plate_rows <- c("A","B","C","D","E","F","G","H")
 plate_cols <- 1:12
 wells <- as.vector(t(outer(plate_rows, plate_cols, paste, sep="")))
-plates <- colnames(seqtab2) # May have to fix index later...
+plates <- colnames(seqtab2)
 plate_well_combos <- as.vector(t(outer(plates, wells, paste, sep="_")))
 
 processed_data[,plate_well_combos] <- 0
@@ -196,7 +196,7 @@ for (i in 1:nrow(seqtab2)) {
 ### Collapse counts for unique sequencess
 ```{r}
 # Extract trimmed seqs and their count information
-trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Riley"))
+trimmed_seqs_data <- processed_data %>% select("trimmed_seq", all_of(plate_well_combos))
 
 # Collapse (sum) plate-well values for each unique trimmed 
 unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=sum)
