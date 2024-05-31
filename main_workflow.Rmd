@@ -114,44 +114,87 @@ table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
 table(nchar(getSequences(seqtab2)))
 
-# Write seqtab to a csv file which will be used in python script
-write.csv(t(seqtab2), file.path("./output/input_seqtab.csv"))
+seqtab2 <- t(seqtab2)
 ```
 
+### Barcode and well identification
 
-### Python Part
+Previously, this part was done in Python using the `process_dada2_seqtab.py` script. This process is now done in the R chunk below.
 
-This next code chunk, is to be run on command line. DO NOT run it here in Rstudio, it does not work via Rstudio.
+```{r}
+barcodes <- read.csv("BC_to_well2.csv")
 
-The purpose of this python part is to run the python script named `process_dada2_seqtab.py`.
+f_primer <- "GTGCCAGCMGCCGCGGTAA"
+r_primer <- "GACTACHVGGGTATCTAATCC"
 
-This python script identifies well for each sequence based on its barcodes, removes barcodes and primers and keeps the original sequence (ASV), and keeps the counts of sequences as-is.
+processed_data <- data.frame(original_seq=rownames(seqtab2))
+processed_data[,c("f_barcode","r_barcode","well","trimmed_seq")] <- ""
 
-Please read the following explanation of the python command you will need to run as part of this section.
+plate_rows <- c("A","B","C","D","E","F","G","H")
+plate_cols <- 1:12
+wells <- as.vector(t(outer(plate_rows, plate_cols, paste, sep="")))
+plates <- colnames(seqtab2) # May have to fix index later...
+plate_well_combos <- as.vector(t(outer(plates, wells, paste, sep="_")))
 
-**process_dada2_seqtab.py** is the python script that processes sequences.
---fprimer takes forward primer sequence.
---rprimer takes reverse primer sequence.
---seqtab-path takes the path of the **input_seqtab.csv** file we get from dada2 workflow above.
---barcode-path takes the path to the csv file containing barcode information.
---output-path takes the name of the output file. Keep it as **processed_data_output.csv**
+processed_data[,plate_well_combos] <- 0
 
-Now that you have read above explanation of what happens with this python section, please copy the following python command, open the "Terminal" tab at the bottom window of your Rstudio, and run this python command there. Remember to run this on "Terminal" tab instead of "Console" tab.
-
-```{}
-python3 process_dada2_seqtab.py --fprimer GTGCCAGCMGCCGCGGTAA \
---rprimer GACTACHVGGGTATCTAATCC \
---seqtab-path ./output/input_seqtab.csv \
---barcode-path BC_to_well2.csv \
---output-path ./output/processed_data_output.csv
+# Process each sequence
+for (i in 1:nrow(seqtab2)) {
+  seq <- rownames(seqtab2)[i]
+  
+  f_barcode <- ""
+  r_barcode <- ""
+  well <- "no_well" # To match what Komal has
+  
+  # Find line in barcode map with matching fwd and rev barcodes
+  j <- which(startsWith(seq, barcodes$F) & endsWith(seq, barcodes$R))
+  
+  # There should be either a single match (length(j)==1) 
+  # or no matches (length(j)==0), so if length(j) > 0, set
+  # barcodes and well accordingly.
+  if (length(j) > 0) {
+    f_barcode <- barcodes[j,1]
+    r_barcode <- barcodes[j,2]
+    well <- barcodes[j,3]
+  } 
+  
+  # Populate corresponding output fields
+  processed_data[i,"f_barcode"] <- f_barcode
+  processed_data[i,"r_barcode"] <- r_barcode
+  processed_data[i,"well"] <- well
+  
+  # Trim sequence
+  # (regardless of whether there is a match or not, since that's what Komal did)
+  len_front <- nchar(f_primer) + nchar(f_barcode)
+  len_back <- nchar(r_primer) + nchar(r_barcode)
+  len_seq <- nchar(seq)
+  
+  # Add trimmed sequence to output
+  processed_data[i,"trimmed_seq"] <- substr(seq, len_front+1, len_seq-len_back)
+  
+  # If we don't have a barcode match, no point in tabulating plate counts
+  # since we don't know what well they come from.
+  if (length(j) == 0) {
+    next
+  }
+  
+  # Populate counts
+  # For current row, find which plates have non-zero counts
+  # For each plate with a non-zero count, assign total to
+  # the appropriate plate+well combo
+  for (plate in plates) {
+    seq_count <- seqtab2[i,plate]
+    if (seq_count > 0) {
+      plate_well <- paste(plate, well, sep="_")
+      processed_data[i,plate_well] <- seq_count
+    }
+  }
+}
 ```
 
-Once you have successfully run this python command, then proceed to executing subsequent/below code chunks directly in Rstudio as done previously.
 
 ### Collapse counts for unique sequencess
 ```{r}
-# Read processed data file
-processed_data <- read.csv("./output/processed_data_output.csv")
 # Extract trimmed seqs and their count information
 trimmed_seqs_data <- processed_data %>% select("trimmed_seq", starts_with("Riley"))
 
