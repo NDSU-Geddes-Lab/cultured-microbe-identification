@@ -10,17 +10,14 @@ Please download and install the following softwares and packages on your laptop/
 
 	1. R (4.1.0 and above)
 	2. Rstudio
-	3. Python (3.9 and above)
-	4. Python libraries:
-	        1. pandas (1.3.4)
-	5. R packages:
+	3. R packages:
 		1. dada2 (It is always a good idea to make sure that the dada2 package is already installed and running)
 		2. tidyverse
 
 
 ### Download the scripts from GitHub
 
-Download this repository containing R and Python scripts to do processing in subsequent steps.
+Download this repository containing R scripts to do processing in subsequent steps.
 
 - Go to the cultured-microbiome-identification repository
 - Click on the **Code** 
@@ -36,13 +33,12 @@ Download this repository containing R and Python scripts to do processing in sub
 - Store the `BC_to_well2.csv` file in `cultured-microbe-identification` folder.
 - Go to the Rstudio, Click on the drop down menu named as "Project: (None)" and select "New Project".
 - Click on the "Existing Directory". Click on the "Browse". Select the `cultured-microbe-identification` folder created in the beginning.
-- After doing this successfully, there should be `input` sub-folder, `output` sub-folder, `BC_to_well2.csv`, `filter_purity.R`, `main_workflow.Rmd` and 
-`process_dada2_seqtab.py` in the right bottom panel on the Rstudio.
+- After doing this successfully, there should be `input` sub-folder, `output` sub-folder, `BC_to_well2.csv`, `filter_purity.R`, and `main_workflow.Rmd` in the right bottom panel on the Rstudio.
 
 
 ### Explanation of scripts execution:
 
-This paragraph is only an explanation of what is happening inside R-script and Python script and is meant for understanding an overview.
+This paragraph is only an explanation of what is happening inside the R scripts and is meant for understanding an overview.
 
 Once you read this explanation, then proceed to next section of this page on instructions to actual execution.
 
@@ -52,9 +48,8 @@ Once you read this explanation, then proceed to next section of this page on ins
   1. List of the fastq files
   2. Quality plots for the fastq files
   3. A folder named as "filtered" in the input folder containing filtered fastq files
-  4. A file named **"input_seqtab.csv"**
-- The next part is to run a python script. It currently cannot be run directly as Rstudio chunk, therefore it has to be run in Terminal as a command. Detailed instructions are present in the R notebook.
-- By this time we have an intermediate output in a csv file called `processed_data_output.csv` which holds following 
+- The next part is to map each sequence to a pair of forward and reverse barcodes, trim the barcodes and primers, and attribute sequence counts to the plate+well combo corresponding to the matched barcodes.
+- By this time we have an intermediate output, `processed_data_output`, which holds following 
 information for each sequence:
   - Original sequences
   - Its identified forward barcode
