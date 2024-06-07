@@ -1,17 +1,12 @@
-## -----------------------------------------------------------------------------
 library(tidyverse)
 library(dada2)
 
-
-## -----------------------------------------------------------------------------
 # Path to Silva database
 silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
 
 # Path to the folder where all the input fastq files are stored
 path <- "./input"
 
-
-## -----------------------------------------------------------------------------
 # List all the files present in `path` variable
 list.files(path)
 
@@ -45,7 +40,7 @@ length(filtFs)
 length(filtRs)
 
 #Trim based on quality plots, in this example we cut for the forward reads to 240bp and the reverse reads to 200bp
-out<- filterAndTrim(fnFs, 
+out <- filterAndTrim(fnFs, 
                     filtFs, 
                     fnRs, 
                     filtRs, 
@@ -72,6 +67,7 @@ filtRs <- filtRs[exists]
 #Learn the Error Rates
 errF <- learnErrors(filtFs, multithread=TRUE)
 errR <- learnErrors(filtRs, multithread=TRUE)
+
 # Plot error model
 plotErrors(errF, nominalQ=TRUE)
 
@@ -85,13 +81,14 @@ dadaRs[[1]]
 
 #Merge paires reads
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+
 # Inspect the merger data.frame from the first sample
 head(mergers[[3]])
 head(mergers[[10]])
+
 #Construct sequence table to ASV
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
-
 
 # Inspect distribution of sequence lengths
 # the amplicon should be around 299 to 303 bp long
@@ -99,27 +96,33 @@ table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
 table(nchar(getSequences(seqtab2)))
 
+# Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
 
-
-## -----------------------------------------------------------------------------
+# Load barcodes from plate map
 barcodes <- read.csv("BC_to_well2.csv")
 
+# Specify forward and reverse primers
 f_primer <- "GTGCCAGCMGCCGCGGTAA"
 r_primer <- "GACTACHVGGGTATCTAATCC"
 
+# Create output data frame for barcode matches
 processed_data <- data.frame(original_seq=rownames(seqtab2))
 processed_data[,c("f_barcode","r_barcode","well","trimmed_seq")] <- ""
 
+# Create list of plate+well combos
 plate_rows <- c("A","B","C","D","E","F","G","H")
 plate_cols <- 1:12
 wells <- as.vector(t(outer(plate_rows, plate_cols, paste, sep="")))
 plates <- colnames(seqtab2)
 plate_well_combos <- as.vector(t(outer(plates, wells, paste, sep="_")))
 
+# Add plate+well combos to data frame and initialize to 0
 processed_data[,plate_well_combos] <- 0
 
-# Process each sequence
+# For each sequence in the seqtab, determine the plate well
+# by identifying the matching forward and reverse barcodes.
+# Then assign the count for that sequence to the appropriate plate well.
 for (i in 1:nrow(seqtab2)) {
   seq <- rownames(seqtab2)[i]
   
@@ -172,10 +175,9 @@ for (i in 1:nrow(seqtab2)) {
   }
 }
 
-
-## -----------------------------------------------------------------------------
 # Extract trimmed seqs and their count information
-trimmed_seqs_data <- processed_data %>% select("trimmed_seq", all_of(plate_well_combos))
+trimmed_seqs_data <- processed_data %>% 
+  select("trimmed_seq", all_of(plate_well_combos))
 
 # Collapse (sum) plate-well values for each unique trimmed 
 unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=sum)
@@ -183,23 +185,21 @@ unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=su
 rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
 unique_trimmed_seqs$trimmed_seq <- NULL
 
-# write.csv(unique_trimmed_seqs, file="output/unique_trimmed_seqs_data.csv")
-
-
-## -----------------------------------------------------------------------------
+# Additional functions needed for purity calculations
 source("filter_purity.R")
 
-
-## -----------------------------------------------------------------------------
+# Identify wells with top n counts
 final_df <- process_each_sequence(unique_trimmed_seqs, 5)
+
+# Taxonomy
 tax <- get_taxonomy(final_df$ASV, silva_db_path)
 
+# Combine taxonomy with purity information
 fd <- final_df
 rownames(fd) <- fd$ASV
 fd_with_taxa <- merge(tax, fd, by = 0, all = TRUE)
 names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
 # Write final data frame into a csv file
-# Uncomment following line if you would like to store the final result in a csv
 write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
 
