@@ -25,31 +25,43 @@ parser <- add_argument(parser, "--rev",
                        help = "Reverse primer", 
                        default = "GACTACHVGGGTATCTAATCC")
 
+parser <- add_argument(parser, "--outdir", 
+                       help = "Output directory", 
+                       default = "./output")
+
 argv <- parse_args(parser)
 
+# Prepare output directory and place to save plots
+dir.create(file.path(argv$outdir))
+pdf(file.path(argv$outdir, "Rplots.pdf"))
+
 # Path to Silva database
-silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
+silva_db_path <- argv$db
 
 # Path to the folder where all the input fastq files are stored
-path <- "./input"
-
-# List all the files present in `path` variable
-list.files(path)
+path <- argv$fastq_dir
 
 #Sort files to ensure forward/reverse are in the same order
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq.gz", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 
+print(paste(length(fnFs), "forward reads"))
+print(paste(length(fnRs), "reverse reads"))
+
+# TODO: Make sure F and R reads match up (and != 0) or fail with error. ####
+
 #extract sample names, assuming filenames have format:
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+
+# TODO: Print sample names for user. ####
 
 #Now we visualize the quality profile of the reverse reads:
 plotQualityProfile(fnFs[3:6])
 plotQualityProfile(fnRs[3:6])
 
 # Place filtered files in filtered/ subdirectory
-filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+filtFs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
@@ -125,12 +137,13 @@ table(nchar(getSequences(seqtab2)))
 # Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
 
+# TODO: Move all non-DADA2 functionality to a separate library. #### 
 # Load barcodes from plate map
-barcodes <- read.csv("BC_to_well2.csv")
+barcodes <- read.csv(argv$barcodes)
 
 # Specify forward and reverse primers
-f_primer <- "GTGCCAGCMGCCGCGGTAA"
-r_primer <- "GACTACHVGGGTATCTAATCC"
+f_primer <- argv$fwd
+r_primer <- argv$rev
 
 # Create output data frame for barcode matches
 processed_data <- data.frame(original_seq=rownames(seqtab2))
@@ -218,7 +231,7 @@ source("filter_purity.R")
 final_df <- process_each_sequence(unique_trimmed_seqs, 5)
 
 # Taxonomy
-tax <- get_taxonomy(final_df$ASV, silva_db_path)
+tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
 
 # Combine taxonomy with purity information
 fd <- final_df
@@ -227,5 +240,6 @@ fd_with_taxa <- merge(tax, fd, by = 0, all = TRUE)
 names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
 # Write final data frame into a csv file
-write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
+write.csv(fd_with_taxa, 
+          file = file.path(argv$outdir, "asv_analysis_results.csv"))
 

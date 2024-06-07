@@ -229,7 +229,7 @@ This function uses the assignTaxonomy function from dada2 package in the backgro
 
 ```{r}
 final_df <- process_each_sequence(unique_trimmed_seqs, 5)
-tax <- get_taxonomy(final_df$ASV, silva_db_path)
+tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
 
 fd <- final_df
 rownames(fd) <- fd$ASV
