@@ -1,5 +1,31 @@
-library(tidyverse)
-library(dada2)
+options(tidyverse.quiet = TRUE)
+library(tidyverse, quietly = TRUE)
+library(dada2, quietly = TRUE)
+library(argparser, quietly = TRUE)
+
+# Process command line args
+parser <- arg_parser("Cultured Microbe ID", hide.opts = TRUE)
+
+parser <- add_argument(parser, "fastq_dir", 
+                       help = "Directory containing input sequences (.fastq.gz)")
+
+parser <- add_argument(parser, "--db", 
+                       help = "Path to taxonomy database", 
+                       default = "./db/silva_nr99_v138.1_train_set.fa.gz")
+
+parser <- add_argument(parser, "--barcodes", 
+                       help = "Path to barcode plate map (.csv)", 
+                       default = "./BC_to_well2.csv")
+
+parser <- add_argument(parser, "--fwd", 
+                       help = "Forward primer", 
+                       default = "GTGCCAGCMGCCGCGGTAA")
+
+parser <- add_argument(parser, "--rev", 
+                       help = "Reverse primer", 
+                       default = "GACTACHVGGGTATCTAATCC")
+
+argv <- parse_args(parser)
 
 # Path to Silva database
 silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
