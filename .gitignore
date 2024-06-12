@@ -4,3 +4,4 @@ db/
 microbe/
 main_workflow.nb.html
 main_workflow.knit.Rmd
+.Rhistory

@@ -25,6 +25,10 @@ parser <- add_argument(parser, "--rev",
                        help = "Reverse primer", 
                        default = "GACTACHVGGGTATCTAATCC")
 
+parser <- add_argument(parser, "--hits", 
+                       help = "Number of hits to report (top n wells)", 
+                       default = "5")
+
 parser <- add_argument(parser, "--outdir", 
                        help = "Output directory", 
                        default = "./output")
@@ -228,7 +232,7 @@ unique_trimmed_seqs$trimmed_seq <- NULL
 source("filter_purity.R")
 
 # Identify wells with top n counts
-final_df <- process_each_sequence(unique_trimmed_seqs, 5)
+final_df <- process_each_sequence(unique_trimmed_seqs, as.integer(argv$hits))
 
 # Taxonomy
 tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
