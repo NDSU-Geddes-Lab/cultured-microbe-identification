@@ -1,36 +1,40 @@
-# cultured-microbe-identification
+# Cultured Microbe ID workflow
 
-## Identify cultured microbes and calculate their purity
+Identify cultured microbes and calculate their purity
 
-Please use this page as the main entrypoint of this workflow for step-by-step instructions on how to use this.
+## Prerequisites and dependencies
 
-### Prerequisites
+In order to run this workflow, you will need to install the following:
 
-Please download and install the following softwares and packages on your laptop/machine.
+	1. [R language](https://www.r-project.org/) (4.1.0 and above)
+	2. [RStudio IDE](https://posit.co/download/rstudio-desktop/) (if you intend to run the interactive RMarkdown notebook)
+	3. Add-on R libraries
 
-	1. R (4.1.0 and above)
-	2. Rstudio
-	3. R packages:
-		1. dada2 (It is always a good idea to make sure that the dada2 package is already installed and running)
-		2. tidyverse
+```r
+install.packages(c("tidyverse","argparser","BiocManager"))
+BiocManager::install("dada2")
+```
 
+## Clone this GitHub repository
 
-### Download the scripts from GitHub
+You can download the source code for this workflow by cloning the repository like so:
 
-Download this repository containing R scripts to do processing in subsequent steps.
+```bash
+git clone https://github.com/NDSU-Geddes-Lab/cultured-microbe-identification.git
+```
 
-- Go to the cultured-microbiome-identification repository
-- Click on the **Code** 
-- From the dropdown list, select **Download Zip** option
-- Move this zipped repository to the repository that holds your input fastq files
+Or you can download this repository manually by following the steps below.
 
+- Click on the **Code**.
+- From the dropdown list, select **Download Zip** option.
+- Move this zipped repository to the repository that holds your input fastq files and unzip it.
 
-### Organization of the data:
+## Preparing the analysis
 
-- After downloading and extracting the source code from above step, you should have a directory called `cultured-microbe-identification`
-- In `cultured-microbe-identification` folder, create two sub-folders `input` and `output`.
-- Store your all the fastq files to be processed in the `input` sub-folder and keep the `output` sub-folder for the final result files.
-- Store the `BC_to_well2.csv` file in `cultured-microbe-identification` folder.
+- After downloading and extracting the source code from above step, you should have a directory called `cultured-microbe-identification`.
+- In the `cultured-microbe-identification` folder, create two sub-folders `input` and `output`.
+- Place your fastq files to be processed in the `input` sub-folder.
+- Place the `BC_to_well2.csv` file in `cultured-microbe-identification` folder.
 - Go to the Rstudio, Click on the drop down menu named as "Project: (None)" and select "New Project".
 - Click on the "Existing Directory". Click on the "Browse". Select the `cultured-microbe-identification` folder created in the beginning.
 - After doing this successfully, there should be `input` sub-folder, `output` sub-folder, `BC_to_well2.csv`, `filter_purity.R`, and `main_workflow.Rmd` in the right bottom panel on the Rstudio.
