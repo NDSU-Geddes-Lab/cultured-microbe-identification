@@ -19,9 +19,9 @@ The following is a high-level overview of the Cultured Microbe ID workflow.
 
 In order to run this workflow, you will need to install the following:
 
-	1. [R language](https://www.r-project.org/) (4.1.0 and above)
-	2. [RStudio IDE](https://posit.co/download/rstudio-desktop/) (if you intend to run the interactive RMarkdown notebook)
-	3. Add-on R libraries
+1. [R language](https://www.r-project.org/) (4.1.0 and above)
+2. [RStudio IDE](https://posit.co/download/rstudio-desktop/) (if you intend to run the interactive RMarkdown notebook)
+3. Add-on R libraries
 
 ```r
 install.packages(c("tidyverse","argparser","BiocManager"))
