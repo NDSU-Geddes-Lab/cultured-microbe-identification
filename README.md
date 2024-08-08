@@ -2,6 +2,19 @@
 
 Identify cultured microbes and calculate their purity
 
+## Workflow overview
+
+The following is a high-level overview of the Cultured Microbe ID workflow.
+
+1. Raw reads are processed using a basic [DADA2](https://benjjneb.github.io/dada2/) processing workflow resulting in a `seqtab` object, where rownames correspond to unique sequences and column names correspond to culture plate IDs. Each entry in the `seqtab` is a count representing the number of times a particular sequence appeared in a particular plate.
+2. For each sequence in the `seqtab`,the pair of forward and reverse barcodes from the `BC_to_well2.csv` plate map are identified, which determines the specific plate well the sequence came from. Barcodes and primers are then trimmed and counts are recorded in that plate+well column.
+3. From the set of trimmed sequences in step 2, unique trimmed sequences are identified and counts for each unique sequence are summed across all rows, resulting in a data frame containing count information for each sequence across all plates and wells.
+4. The top *n* plate wells for each trimmed sequence are identified by sorting the columns for that row. For the top wells, a percetage purity is calculated by dividing the count by the total of all counts for that plate well and multiplying by 100.
+5. Lastly, taxonomy is assigned to each unique sequence, and a results are written to a CSV file. Now for each unique sequence, we have the following information:
+  - ASV
+  - Taxonomy
+  - Top *n* counts of the ASV and the purity of the ASV in the well
+
 ## Prerequisites and dependencies
 
 In order to run this workflow, you will need to install the following:
@@ -15,7 +28,7 @@ install.packages(c("tidyverse","argparser","BiocManager"))
 BiocManager::install("dada2")
 ```
 
-## Clone this GitHub repository
+## Downloading the code
 
 You can download the source code for this workflow by cloning the repository like so:
 
@@ -34,38 +47,6 @@ Or you can download this repository manually by following the steps below.
 - After downloading and extracting the source code from above step, you should have a directory called `cultured-microbe-identification`.
 - In the `cultured-microbe-identification` folder, create two sub-folders `input` and `output`.
 - Place your fastq files to be processed in the `input` sub-folder.
-- Place the `BC_to_well2.csv` file in `cultured-microbe-identification` folder.
-- Go to the Rstudio, Click on the drop down menu named as "Project: (None)" and select "New Project".
-- Click on the "Existing Directory". Click on the "Browse". Select the `cultured-microbe-identification` folder created in the beginning.
-- After doing this successfully, there should be `input` sub-folder, `output` sub-folder, `BC_to_well2.csv`, `filter_purity.R`, and `main_workflow.Rmd` in the right bottom panel on the Rstudio.
-
-
-### Explanation of scripts execution:
-
-This paragraph is only an explanation of what is happening inside the R scripts and is meant for understanding an overview.
-
-Once you read this explanation, then proceed to next section of this page on instructions to actual execution.
-
-- `main_workflow.Rmd` is a R notebook with multiple code chunks.
-- First code chunk is for loading the required R packages (dada2, tidyverse)
-- The second code chunk is the dada2 workflow part. It will output a couple of things below the code chunk:
-  1. List of the fastq files
-  2. Quality plots for the fastq files
-  3. A folder named as "filtered" in the input folder containing filtered fastq files
-- The next part is to map each sequence to a pair of forward and reverse barcodes, trim the barcodes and primers, and attribute sequence counts to the plate+well combo corresponding to the matched barcodes.
-- By this time we have an intermediate output, `processed_data_output`, which holds following 
-information for each sequence:
-  - Original sequences
-  - Its identified forward barcode
-  - Its identified reverse barcode
-  - Identified well name
-  - Counts of the sequences in every well of every plate (zero count in the well except the identified well is expected)
-- Next code chunk collapses the processed data such that we get a table with all the unique clean sequences with their 
-counts in all the wells in all the plates (960 columns named as Plate*_well*).
-- Now we calculate purity percentage of each unique clean sequence. For each unique clean sequences, its counts are 
-sorted from highest to lowest. It divides each count by the total number of counts for that Plate*_well* and multiplies 
-by 100.
- 
 
 ### Execution
 
