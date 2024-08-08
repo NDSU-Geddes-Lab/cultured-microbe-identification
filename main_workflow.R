@@ -1,49 +1,71 @@
----
-title: "R Notebook"
-output: html_notebook
-author:
-- Komal Marathe
----
+options(tidyverse.quiet = TRUE)
+library(tidyverse, quietly = TRUE)
+library(dada2, quietly = TRUE)
+library(argparser, quietly = TRUE)
 
-### IMP NOTE
+# Process command line args
+parser <- arg_parser("Cultured Microbe ID", hide.opts = TRUE)
 
-**Please read README.md file before attempting to run this Rmd notebook.**
+parser <- add_argument(parser, "fastq_dir", 
+                       help = "Directory containing input sequences (.fastq.gz)")
 
-```{r}
-library(tidyverse)
-library(dada2)
-```
+parser <- add_argument(parser, "--db", 
+                       help = "Path to taxonomy database", 
+                       default = "./db/silva_nr99_v138.1_train_set.fa.gz")
 
+parser <- add_argument(parser, "--barcodes", 
+                       help = "Path to barcode plate map (.csv)", 
+                       default = "./BC_to_well2.csv")
 
-### Store relevant paths that will be used in the script
-```{r}
+parser <- add_argument(parser, "--fwd", 
+                       help = "Forward primer", 
+                       default = "GTGCCAGCMGCCGCGGTAA")
+
+parser <- add_argument(parser, "--rev", 
+                       help = "Reverse primer", 
+                       default = "GACTACHVGGGTATCTAATCC")
+
+parser <- add_argument(parser, "--hits", 
+                       help = "Number of hits to report (top n wells)", 
+                       default = "5")
+
+parser <- add_argument(parser, "--outdir", 
+                       help = "Output directory", 
+                       default = "./output")
+
+argv <- parse_args(parser)
+
+# Prepare output directory and place to save plots
+dir.create(file.path(argv$outdir))
+pdf(file.path(argv$outdir, "Rplots.pdf"))
+
 # Path to Silva database
-silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
+silva_db_path <- argv$db
 
 # Path to the folder where all the input fastq files are stored
-path <- "./input"
-```
-
-
-### DADA2 Part
-```{r}
-# List all the files present in `path` variable
-list.files(path)
+path <- argv$fastq_dir
 
 #Sort files to ensure forward/reverse are in the same order
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq.gz", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 
+print(paste(length(fnFs), "forward reads"))
+print(paste(length(fnRs), "reverse reads"))
+
+# TODO: Make sure F and R reads match up (and != 0) or fail with error. ####
+
 #extract sample names, assuming filenames have format:
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+
+# TODO: Print sample names for user. ####
 
 #Now we visualize the quality profile of the reverse reads:
 plotQualityProfile(fnFs[3:6])
 plotQualityProfile(fnRs[3:6])
 
 # Place filtered files in filtered/ subdirectory
-filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
-filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+filtFs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
@@ -60,7 +82,7 @@ length(filtFs)
 length(filtRs)
 
 #Trim based on quality plots, in this example we cut for the forward reads to 240bp and the reverse reads to 200bp
-out<- filterAndTrim(fnFs, 
+out <- filterAndTrim(fnFs, 
                     filtFs, 
                     fnRs, 
                     filtRs, 
@@ -87,6 +109,7 @@ filtRs <- filtRs[exists]
 #Learn the Error Rates
 errF <- learnErrors(filtFs, multithread=TRUE)
 errR <- learnErrors(filtRs, multithread=TRUE)
+
 # Plot error model
 plotErrors(errF, nominalQ=TRUE)
 
@@ -100,13 +123,14 @@ dadaRs[[1]]
 
 #Merge paires reads
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
+
 # Inspect the merger data.frame from the first sample
 head(mergers[[3]])
 head(mergers[[10]])
+
 #Construct sequence table to ASV
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
-
 
 # Inspect distribution of sequence lengths
 # the amplicon should be around 299 to 303 bp long
@@ -114,31 +138,34 @@ table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
 table(nchar(getSequences(seqtab2)))
 
+# Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
-```
 
-### Barcode and well identification
+# TODO: Move all non-DADA2 functionality to a separate library. #### 
+# Load barcodes from plate map
+barcodes <- read.csv(argv$barcodes)
 
-Previously, this part was done in Python using the `process_dada2_seqtab.py` script. This process is now done in the R chunk below.
+# Specify forward and reverse primers
+f_primer <- argv$fwd
+r_primer <- argv$rev
 
-```{r}
-barcodes <- read.csv("BC_to_well2.csv")
-
-f_primer <- "GTGCCAGCMGCCGCGGTAA"
-r_primer <- "GACTACHVGGGTATCTAATCC"
-
+# Create output data frame for barcode matches
 processed_data <- data.frame(original_seq=rownames(seqtab2))
 processed_data[,c("f_barcode","r_barcode","well","trimmed_seq")] <- ""
 
+# Create list of plate+well combos
 plate_rows <- c("A","B","C","D","E","F","G","H")
 plate_cols <- 1:12
 wells <- as.vector(t(outer(plate_rows, plate_cols, paste, sep="")))
 plates <- colnames(seqtab2)
 plate_well_combos <- as.vector(t(outer(plates, wells, paste, sep="_")))
 
+# Add plate+well combos to data frame and initialize to 0
 processed_data[,plate_well_combos] <- 0
 
-# Process each sequence
+# For each sequence in the seqtab, determine the plate well
+# by identifying the matching forward and reverse barcodes.
+# Then assign the count for that sequence to the appropriate plate well.
 for (i in 1:nrow(seqtab2)) {
   seq <- rownames(seqtab2)[i]
   
@@ -190,13 +217,10 @@ for (i in 1:nrow(seqtab2)) {
     }
   }
 }
-```
 
-
-### Collapse counts for unique sequencess
-```{r}
 # Extract trimmed seqs and their count information
-trimmed_seqs_data <- processed_data %>% select("trimmed_seq", all_of(plate_well_combos))
+trimmed_seqs_data <- processed_data %>% 
+  select("trimmed_seq", all_of(plate_well_combos))
 
 # Collapse (sum) plate-well values for each unique trimmed 
 unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=sum)
@@ -204,42 +228,22 @@ unique_trimmed_seqs <- aggregate(. ~ trimmed_seq, data=trimmed_seqs_data, FUN=su
 rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
 unique_trimmed_seqs$trimmed_seq <- NULL
 
-# write.csv(unique_trimmed_seqs, file="output/unique_trimmed_seqs_data.csv")
-```
-
-
-### Purity Calculation
-```{r}
+# Additional functions needed for purity calculations
 source("filter_purity.R")
-```
 
-The process_each_sequence function used in the next code chunk takes two arguments.
-1. dataframe of trimmed unique sequences and their counts.
-2. top n highest counts for each sequences. If you would like to get all the counts in descending order,
-input the total number of well-plate combinations. In this case there were 960 well-plate combos.
-Here we used 1100. Even though there were 960 well-plate combos, it will still print all the 960 counts for each sequence.
-If you do not know the exact number of total number of well-plate combinations, and provide a number greater than that,
-you will still give you all the counts.
+# Identify wells with top n counts
+final_df <- process_each_sequence(unique_trimmed_seqs, as.integer(argv$hits))
 
-
-The get_taxonomy function used in the next code chunk  takes two arguments.
-1. A vector of all the trimmed unique sequences (ASVs).
-2. Path to the silva database file
-This function uses the assignTaxonomy function from dada2 package in the background.
-
-```{r}
-final_df <- process_each_sequence(unique_trimmed_seqs, 5)
+# Taxonomy
 tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
 
+# Combine taxonomy with purity information
 fd <- final_df
 rownames(fd) <- fd$ASV
 fd_with_taxa <- merge(tax, fd, by = 0, all = TRUE)
 names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
 # Write final data frame into a csv file
-# Uncomment following line if you would like to store the final result in a csv
-write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
-```
-
-
+write.csv(fd_with_taxa, 
+          file = file.path(argv$outdir, "asv_analysis_results.csv"))
 

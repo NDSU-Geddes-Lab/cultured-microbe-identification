@@ -34,10 +34,3 @@ process_each_sequence <- function(uniq_asv_df, top_n){
   }
   return(final_df)
 }
-
-
-get_taxonomy <- function(uniq_asv, silva_db_path){
-  taxonomy_added <- assignTaxonomy(uniq_asv, silva_db_path, multithread=TRUE)
-  return(taxonomy_added)
-}
-
