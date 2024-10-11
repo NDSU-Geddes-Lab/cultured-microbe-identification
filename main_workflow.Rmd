@@ -1,21 +1,22 @@
 ---
-title: "R Notebook"
+title: "Cultured Microbe ID Workflow"
 output: html_notebook
 author:
 - Komal Marathe
+- Nick Dusek
 ---
 
-### IMP NOTE
+### IMPORTANT NOTE
 
-**Please read README.md file before attempting to run this Rmd notebook.**
+**Please read the README.md file before attempting to run this Rmd notebook.**
 
 ```{r}
 library(tidyverse)
 library(dada2)
 ```
 
-
 ### Store relevant paths that will be used in the script
+
 ```{r}
 # Path to Silva database
 silva_db_path <- "./db/silva_nr99_v138.1_train_set.fa.gz"
@@ -25,7 +26,8 @@ path <- "./input"
 ```
 
 
-### DADA2 Part
+### Generate seqtab with DADA2
+
 ```{r}
 # List all the files present in `path` variable
 list.files(path)
@@ -119,8 +121,6 @@ seqtab2 <- t(seqtab2)
 
 ### Barcode and well identification
 
-Previously, this part was done in Python using the `process_dada2_seqtab.py` script. This process is now done in the R chunk below.
-
 ```{r}
 barcodes <- read.csv("BC_to_well2.csv")
 
@@ -192,8 +192,8 @@ for (i in 1:nrow(seqtab2)) {
 }
 ```
 
-
 ### Collapse counts for unique sequencess
+
 ```{r}
 # Extract trimmed seqs and their count information
 trimmed_seqs_data <- processed_data %>% select("trimmed_seq", all_of(plate_well_combos))
@@ -208,24 +208,16 @@ unique_trimmed_seqs$trimmed_seq <- NULL
 ```
 
 
-### Purity Calculation
+### Calculate purity
+
 ```{r}
 source("filter_purity.R")
 ```
 
-The process_each_sequence function used in the next code chunk takes two arguments.
-1. dataframe of trimmed unique sequences and their counts.
-2. top n highest counts for each sequences. If you would like to get all the counts in descending order,
-input the total number of well-plate combinations. In this case there were 960 well-plate combos.
-Here we used 1100. Even though there were 960 well-plate combos, it will still print all the 960 counts for each sequence.
-If you do not know the exact number of total number of well-plate combinations, and provide a number greater than that,
-you will still give you all the counts.
+The `process_each_sequence()` function used in the next code chunk takes two arguments:
 
-
-The get_taxonomy function used in the next code chunk  takes two arguments.
-1. A vector of all the trimmed unique sequences (ASVs).
-2. Path to the silva database file
-This function uses the assignTaxonomy function from dada2 package in the background.
+1. The data frame of trimmed unique sequences and their counts.
+2. An integer value, `n`, specifying how many counts to return for each sequences.
 
 ```{r}
 final_df <- process_each_sequence(unique_trimmed_seqs, 5)
@@ -240,6 +232,4 @@ names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 # Uncomment following line if you would like to store the final result in a csv
 write.csv(fd_with_taxa, file = "./output/asv_analysis_results.csv")
 ```
-
-
 
