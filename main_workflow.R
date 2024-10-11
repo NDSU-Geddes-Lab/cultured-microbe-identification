@@ -238,10 +238,12 @@ final_df <- process_each_sequence(unique_trimmed_seqs, as.integer(argv$hits))
 tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
 
 # Combine taxonomy with purity information
-fd <- final_df
-rownames(fd) <- fd$ASV
-fd_with_taxa <- merge(tax, fd, by = 0, all = TRUE)
+rownames(final_df) <- final_df$ASV
+fd_with_taxa <- merge(tax, final_df, by.x = 0, by.y="ASV", all = TRUE)
 names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
+
+# Filter out Eukaryotes (if any)
+fd_with_taxa <- fd_with_taxa %>% filter(Kingdom != "Eukaryota")
 
 # Write final data frame into a csv file
 write.csv(fd_with_taxa, 
