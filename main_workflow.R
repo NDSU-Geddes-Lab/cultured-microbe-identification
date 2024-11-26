@@ -2,6 +2,7 @@ options(tidyverse.quiet = TRUE)
 library(tidyverse, quietly = TRUE)
 library(dada2, quietly = TRUE)
 library(argparser, quietly = TRUE)
+library(logger)
 
 # Process command line args
 parser <- arg_parser("Cultured Microbe ID", hide.opts = TRUE)
@@ -36,7 +37,7 @@ parser <- add_argument(parser, "--outdir",
 argv <- parse_args(parser)
 
 # Prepare output directory and place to save plots
-dir.create(file.path(argv$outdir))
+dir.create(file.path(argv$outdir), showWarnings=FALSE)
 pdf(file.path(argv$outdir, "Rplots.pdf"))
 
 # Path to Silva database
@@ -49,19 +50,33 @@ path <- argv$fastq_dir
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq.gz", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 
-print(paste(length(fnFs), "forward reads"))
-print(paste(length(fnRs), "reverse reads"))
-
-# TODO: Make sure F and R reads match up (and != 0) or fail with error. ####
+# Check number of forward and reverse reads
+if (length(fnFs) != length(fnRs)) {
+  log_error("Different numbers of forward and reverse read files. Exiting...")
+  quit()
+}
 
 #extract sample names, assuming filenames have format:
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+sample.names.fwd <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+sample.names.rev <- sapply(strsplit(basename(fnRs), "_"), `[`, 1)
 
-# TODO: Print sample names for user. ####
+# Make sure F and R reads match up or fail with error.
+if (! all(sample.names.fwd == sample.names.rev)) {
+  log_error("Forward and reverse sample names do not match. Exiting...")
+  quit()
+}
+
+sample.names <- sample.names.fwd
+
+# Print sample names for user.
+log_info("Identified {length(sample.names)} samples:")
+log_info("{sample.names}")
 
 #Now we visualize the quality profile of the reverse reads:
 plotQualityProfile(fnFs[3:6])
 plotQualityProfile(fnRs[3:6])
+
+quit()
 
 # Place filtered files in filtered/ subdirectory
 filtFs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
@@ -141,7 +156,6 @@ table(nchar(getSequences(seqtab2)))
 # Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
 
-# TODO: Move all non-DADA2 functionality to a separate library. #### 
 # Load barcodes from plate map
 barcodes <- read.csv(argv$barcodes)
 
