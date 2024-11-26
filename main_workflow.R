@@ -2,7 +2,6 @@ suppressPackageStartupMessages({
   library(tidyverse)
   library(dada2)
   library(argparser)
-  library(logger)
 })
 
 # Process command line args
@@ -37,6 +36,17 @@ parser <- add_argument(parser, "--outdir",
 
 argv <- parse_args(parser)
 
+# For testing
+argv <- list(
+  fastq_dir <- "./input",
+  db <- "./db/silva_nr99_v138.1_train_set.fa.gz",
+  barcodes <- "./BC_to_well2.csv",
+  fwd <- "GTGCCAGCMGCCGCGGTAA",
+  rev <- "GACTACHVGGGTATCTAATCC",
+  hits <- "5",
+  outdir <- "./output"
+)
+
 # Prepare output directory and place to save plots
 dir.create(file.path(argv$outdir), showWarnings=FALSE)
 pdf(file.path(argv$outdir, "Rplots.pdf"))
@@ -53,8 +63,7 @@ fnRs <- sort(list.files(path, pattern="_R2_001.fastq.gz", full.names = TRUE))
 
 # Check number of forward and reverse reads
 if (length(fnFs) != length(fnRs)) {
-  log_error("Different numbers of forward and reverse read files. Exiting...")
-  quit()
+  stop("Different numbers of forward and reverse read files.")
 }
 
 #extract sample names, assuming filenames have format:
@@ -63,8 +72,7 @@ sample.names.rev <- sapply(strsplit(basename(fnRs), "_"), `[`, 1)
 
 # Make sure F and R reads match up or fail with error.
 if (! all(sample.names.fwd == sample.names.rev)) {
-  log_error("Forward and reverse sample names do not match. Exiting...")
-  quit()
+  stop("Forward and reverse sample names do not match.")
 }
 
 sample.names <- sample.names.fwd
@@ -72,12 +80,11 @@ sample.names <- sample.names.fwd
 # Lastly, check for duplicate sample names
 if (any(duplicated(sample.names))) {
   duplicates <- unique(sample.names[duplicated(sample.names)])
-  log_error("Duplicate sample names: {duplicates}")
-  quit()
+  stop(paste("Duplicate sample names:", duplicates))
 }
 
 # Print sample names for user.
-log_info("Identified {length(sample.names)} samples: {paste(sample.names, collapse=' ')}")
+cat("Identified", {length(sample.names)}, "samples:", sample.names, "\n")
 
 #Now we visualize the quality profile of the reverse reads:
 #plotQualityProfile(fnFs)
@@ -114,10 +121,12 @@ filtRs <- filtRs[exists]
 
 if (length(filtFs) != length(sample.names)) {
   dropped <- sample.names[!exists]
-  log_warn("Dropped {length(dropped)} samples that failed quality filtering: paste(dropped, collapse=' ')")
+  warning(paste("Dropped", length(dropped), 
+                "samples that failed quality filtering:",
+                paste(dropped, collapse=' ')))
 }
 
-log_info("{length(filtFs)} samples remaining after filtering.")
+cat(length(filtFs), "samples remaining after filtering.\n")
 
 #Learn the Error Rates
 errF <- learnErrors(filtFs, multithread=TRUE)
@@ -127,7 +136,9 @@ errR <- learnErrors(filtRs, multithread=TRUE)
 #plotErrors(errF, nominalQ=TRUE)
 
 #Apply the core sample inference algorithm to the filtered and trimmed sequence data.
+cat("Inferring sample composition for forward filtered reads.\n")
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
+cat("Inferring sample composition for reverse filtered reads.\n")
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 
 #Inspecting the returned dada-class object:
@@ -135,21 +146,20 @@ dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 #dadaRs[[1]]
 
 #Merge paires reads
+cat("Merging paired-end reads.\n")
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
 
-# Inspect the merger data.frame from the first sample
-head(mergers[[3]])
-head(mergers[[10]])
-
 #Construct sequence table to ASV
+cat("Creating seqtab.\n")
 seqtab <- makeSequenceTable(mergers)
-dim(seqtab)
 
 # Inspect distribution of sequence lengths
 # the amplicon should be around 299 to 303 bp long
-table(nchar(getSequences(seqtab)))
+#table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
-table(nchar(getSequences(seqtab2)))
+#table(nchar(getSequences(seqtab2)))
+
+
 
 # Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
