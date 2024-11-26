@@ -38,13 +38,13 @@ argv <- parse_args(parser)
 
 # For testing
 argv <- list(
-  fastq_dir <- "./input",
-  db <- "./db/silva_nr99_v138.1_train_set.fa.gz",
-  barcodes <- "./BC_to_well2.csv",
-  fwd <- "GTGCCAGCMGCCGCGGTAA",
-  rev <- "GACTACHVGGGTATCTAATCC",
-  hits <- "5",
-  outdir <- "./output"
+  fastq_dir = "./input",
+  db = "./db/silva_nr99_v138.1_train_set.fa.gz",
+  barcodes = "./BC_to_well2.csv",
+  fwd = "GTGCCAGCMGCCGCGGTAA",
+  rev = "GACTACHVGGGTATCTAATCC",
+  hits = "5",
+  outdir = "./output"
 )
 
 # Prepare output directory and place to save plots
@@ -153,13 +153,18 @@ mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
 cat("Creating seqtab.\n")
 seqtab <- makeSequenceTable(mergers)
 
+cat("Identified", ncol(seqtab), "unique sequences among all samples.\n")
+
 # Inspect distribution of sequence lengths
 # the amplicon should be around 299 to 303 bp long
-#table(nchar(getSequences(seqtab)))
 seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 299:303]
-#table(nchar(getSequences(seqtab2)))
 
+n_wrong_size <- ncol(seqtab)-ncol(seqtab2)
+if (n_wrong_size > 0) {
+  cat("Removed", n_wrong_size, "sequences of incorrect length (299-303 bp).\n")
+}
 
+cat(ncol(seqtab2), "sequences remaining in final seqtab.\n")
 
 # Transpose seqtab for processing barcodes
 seqtab2 <- t(seqtab2)
