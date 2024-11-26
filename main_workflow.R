@@ -69,31 +69,26 @@ if (! all(sample.names.fwd == sample.names.rev)) {
 
 sample.names <- sample.names.fwd
 
+# Lastly, check for duplicate sample names
+if (any(duplicated(sample.names))) {
+  duplicates <- unique(sample.names[duplicated(sample.names)])
+  log_error("Duplicate sample names: {duplicates}")
+  quit()
+}
+
 # Print sample names for user.
-log_info("Identified {length(sample.names)} samples:")
-log_info("{sample.names}")
+log_info("Identified {length(sample.names)} samples: {paste(sample.names, collapse=' ')}")
 
 #Now we visualize the quality profile of the reverse reads:
-plotQualityProfile(fnFs[3:6])
-plotQualityProfile(fnRs[3:6])
+#plotQualityProfile(fnFs)
+#plotQualityProfile(fnRs)
 
 # Place filtered files in filtered/ subdirectory
+dir.create(file.path(argv$outdir, "filtered"), showWarnings=FALSE)
 filtFs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
-
-# Get the total number of input fastq files
-length(fnFs)
-length(fnRs)
-
-# Check if there are any duplicate input fastq files
-any(duplicated(c(fnFs, fnRs)))
-any(duplicated(c(filtFs, filtRs)))
-
-# Check of total number of filtered fastq files
-length(filtFs)
-length(filtRs)
 
 #Trim based on quality plots, in this example we cut for the forward reads to 240bp and the reverse reads to 200bp
 out <- filterAndTrim(fnFs, 
@@ -107,33 +102,37 @@ out <- filterAndTrim(fnFs,
                     rm.phix=TRUE, 
                     compress=TRUE, 
                     multithread=TRUE)  # On Windows set multithread=FALSE
-head(out)
 
 #Plot again to see if the trimming worked
-plotQualityProfile(filtFs[3:6])
-plotQualityProfile(filtRs[3:6])
+#plotQualityProfile(filtFs)
+#plotQualityProfile(filtRs)
 
-table(file.exists(filtFs))
-table(file.exists(filtRs))
-
+# Check to see if any samples were dropped after filtering
 exists <- file.exists(filtFs) & file.exists(filtRs)
 filtFs <- filtFs[exists]
 filtRs <- filtRs[exists]
+
+if (length(filtFs) != length(sample.names)) {
+  dropped <- sample.names[!exists]
+  log_warn("Dropped {length(dropped)} samples that failed quality filtering: paste(dropped, collapse=' ')")
+}
+
+log_info("{length(filtFs)} samples remaining after filtering.")
 
 #Learn the Error Rates
 errF <- learnErrors(filtFs, multithread=TRUE)
 errR <- learnErrors(filtRs, multithread=TRUE)
 
 # Plot error model
-plotErrors(errF, nominalQ=TRUE)
+#plotErrors(errF, nominalQ=TRUE)
 
 #Apply the core sample inference algorithm to the filtered and trimmed sequence data.
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 
 #Inspecting the returned dada-class object:
-dadaFs[[1]]
-dadaRs[[1]]
+#dadaFs[[1]]
+#dadaRs[[1]]
 
 #Merge paires reads
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
