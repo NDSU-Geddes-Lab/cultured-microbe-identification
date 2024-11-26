@@ -1,8 +1,9 @@
-options(tidyverse.quiet = TRUE)
-library(tidyverse, quietly = TRUE)
-library(dada2, quietly = TRUE)
-library(argparser, quietly = TRUE)
-library(logger)
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(dada2)
+  library(argparser)
+  library(logger)
+})
 
 # Process command line args
 parser <- arg_parser("Cultured Microbe ID", hide.opts = TRUE)
@@ -75,8 +76,6 @@ log_info("{sample.names}")
 #Now we visualize the quality profile of the reverse reads:
 plotQualityProfile(fnFs[3:6])
 plotQualityProfile(fnRs[3:6])
-
-quit()
 
 # Place filtered files in filtered/ subdirectory
 filtFs <- file.path(argv$outdir, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
