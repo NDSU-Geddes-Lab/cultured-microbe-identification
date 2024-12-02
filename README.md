@@ -35,7 +35,7 @@ Or you can download this repository manually by following the steps below.
 - Place your fastq files to be processed in the `input` sub-folder.
 - Place your Silva taxonomy database in the `db` folder.
 
-*Note: These are just the defaults. Paths to input, output, and database folders can be changed manually in the RMarkdown notebook or via command line arguments in the CLI script.*
+*Note: These are just the defaults. Paths to input, output, and database folders can be changed manually using the appropriate command line arguments.*
 
 ## Running the workflow
 
