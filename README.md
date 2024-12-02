@@ -1,16 +1,6 @@
 # Cultured Microbe ID workflow
 
-Identify cultured microbes and calculate their purity
-
-## Workflow overview
-
-The following is a high-level overview of the Cultured Microbe ID workflow.
-
-1. Raw reads are processed using a basic [DADA2](https://benjjneb.github.io/dada2/) processing workflow resulting in a `seqtab` object, where rownames correspond to unique sequences and column names correspond to culture plate IDs. Each entry in the `seqtab` is a count representing the number of times a particular sequence appeared in a particular plate.
-2. For each sequence in the `seqtab`,the pair of forward and reverse barcodes from the `BC_to_well2.csv` plate map are identified, which determines the specific plate well the sequence came from. Barcodes and primers are then trimmed and counts are recorded in that plate+well column.
-3. From the set of trimmed sequences above, unique trimmed sequences are identified and counts for each unique sequence are summed across all rows, resulting in a data frame containing count information for each sequence across all plates and wells.
-4. The top *n* plate wells for each trimmed sequence are identified by sorting the columns for that row. For the top wells, a percetage purity is calculated by dividing the count by the total of all counts for that plate well and multiplying by 100.
-5. Lastly, taxonomy is assigned to each unique sequence, and a results are written to a CSV file. Now for each unique ASV in the results file, we have the ASV sequence, its taxonomy, the top *n* plate wells (by count) containing the ASV, and the purity of the ASV in the well.
+Identify cultured microbes and calculate their purity.
 
 ## Prerequisites and dependencies
 
