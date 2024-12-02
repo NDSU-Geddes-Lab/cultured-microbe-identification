@@ -34,6 +34,10 @@ parser <- add_argument(parser, "--outdir",
                        help = "Output directory", 
                        default = "./output")
 
+parser <- add_argument(parser, "--multithread",
+                       help = "Set to FALSE for Windows",
+                       default = "TRUE")
+
 argv <- parse_args(parser)
 
 # For testing
@@ -108,7 +112,7 @@ out <- filterAndTrim(fnFs,
                     truncQ=2, 
                     rm.phix=TRUE, 
                     compress=TRUE, 
-                    multithread=TRUE)  # On Windows set multithread=FALSE
+                    multithread=as.logical(argv$multithread))  # On Windows set multithread=FALSE
 
 #Plot again to see if the trimming worked
 #plotQualityProfile(filtFs)

@@ -49,27 +49,29 @@ Rscript microbeID.R -h
 You should then see a help menu like this:
 
 ```
-usage: microbeID.R [--] [--help] [--db DB] [--barcodes BARCODES]
-       [--fwd FWD] [--rev REV] [--hits HITS] [--outdir OUTDIR]
-       fastq_dir
+usage: microbeID.R [--] [--help] [--db DB] [--barcodes BARCODES] [--fwd
+       FWD] [--rev REV] [--hits HITS] [--outdir OUTDIR] [--multithread
+       MULTITHREAD] fastq_dir
 
 Cultured Microbe ID
 
 positional arguments:
-  fastq_dir       Directory containing input sequences (.fastq.gz)
+  fastq_dir          Directory containing input sequences (.fastq.gz)
 
 flags:
-  -h, --help      show this help message and exit
+  -h, --help         show this help message and exit
 
 optional arguments:
-  -d, --db        Path to taxonomy database [default:
-                  ./db/silva_nr99_v138.1_train_set.fa.gz]
-  -b, --barcodes  Path to barcode plate map (.csv) [default:
-                  ./BC_to_well2.csv]
-  -f, --fwd       Forward primer [default: GTGCCAGCMGCCGCGGTAA]
-  -r, --rev       Reverse primer [default: GACTACHVGGGTATCTAATCC]
-  --hits          Number of hits to report (top n wells) [default: 5]
-  -o, --outdir    Output directory [default: ./output]
+  -d, --db           Path to taxonomy database [default:
+                     ./db/silva_nr99_v138.1_train_set.fa.gz]
+  -b, --barcodes     Path to barcode plate map (.csv) [default:
+                     ./BC_to_well2.csv]
+  -f, --fwd          Forward primer [default: GTGCCAGCMGCCGCGGTAA]
+  -r, --rev          Reverse primer [default: GACTACHVGGGTATCTAATCC]
+  --hits             Number of hits to report (top n wells) [default:
+                     5]
+  -o, --outdir       Output directory [default: ./output]
+  -m, --multithread  Set to FALSE for Windows [default: TRUE]
 
 ```
 
