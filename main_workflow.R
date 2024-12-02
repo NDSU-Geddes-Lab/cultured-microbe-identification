@@ -37,15 +37,15 @@ parser <- add_argument(parser, "--outdir",
 argv <- parse_args(parser)
 
 # For testing
-argv <- list(
-  fastq_dir = "./input",
-  db = "./db/silva_nr99_v138.1_train_set.fa.gz",
-  barcodes = "./BC_to_well2.csv",
-  fwd = "GTGCCAGCMGCCGCGGTAA",
-  rev = "GACTACHVGGGTATCTAATCC",
-  hits = "5",
-  outdir = "./output"
-)
+# argv <- list(
+#   fastq_dir = "./input",
+#   db = "./db/silva_nr99_v138.1_train_set.fa.gz",
+#   barcodes = "./BC_to_well2.csv",
+#   fwd = "GTGCCAGCMGCCGCGGTAA",
+#   rev = "GACTACHVGGGTATCTAATCC",
+#   hits = "5",
+#   outdir = "./output"
+# )
 
 # Prepare output directory and place to save plots
 dir.create(file.path(argv$outdir), showWarnings=FALSE)
@@ -170,6 +170,7 @@ cat(ncol(seqtab2), "sequences remaining in final seqtab.\n")
 seqtab2 <- t(seqtab2)
 
 # Load barcodes from plate map
+cat("Deconvoluting sequences based on barcodes.\n")
 barcodes <- read.csv(argv$barcodes)
 
 # Specify forward and reverse primers
@@ -256,12 +257,15 @@ rownames(unique_trimmed_seqs) <- unique_trimmed_seqs$trimmed_seq
 unique_trimmed_seqs$trimmed_seq <- NULL
 
 # Additional functions needed for purity calculations
+cat("Calculating sequence purity.\n")
 source("filter_purity.R")
 
 # Identify wells with top n counts
+cat("Keeping top", argv$hits, "hits (by sequence count).\n")
 final_df <- process_each_sequence(unique_trimmed_seqs, as.integer(argv$hits))
 
 # Taxonomy
+cat("Assigning taxonomy.\n")
 tax <- assignTaxonomy(final_df$ASV, silva_db_path, multithread=TRUE)
 
 # Combine taxonomy with purity information
@@ -269,10 +273,15 @@ rownames(final_df) <- final_df$ASV
 fd_with_taxa <- merge(tax, final_df, by.x = 0, by.y="ASV", all = TRUE)
 names(fd_with_taxa)[names(fd_with_taxa) == "Row.names"] <- "ASV"
 
-# Filter out Eukaryotes (if any)
+# Remove Eukaryotes (if any)
+n_taxa <- nrow(fd_with_taxa)
 fd_with_taxa <- fd_with_taxa %>% filter(Kingdom != "Eukaryota")
+n_euk <- n_taxa - nrow(fd_with_taxa)
+if (n_euk > 0) {
+  cat("Removed", n_euk, "ASVs identified as Eukaryotes.\n")
+}
 
 # Write final data frame into a csv file
-write.csv(fd_with_taxa, 
-          file = file.path(argv$outdir, "asv_analysis_results.csv"))
-
+results_file <- file.path(argv$outdir, "asv_analysis_results.csv")
+cat("Writing results to", results_file, "\n")
+write.csv(fd_with_taxa, file = results_file)
